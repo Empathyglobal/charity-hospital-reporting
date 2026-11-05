@@ -1,0 +1,2 @@
+import {createStorage} from './storage.mjs';
+export function createPgRepository({pool,workspaceId}){return createStorage({workspaceId,transaction:async(write,fn)=>{const c=await pool.connect();try{await c.query(write?'BEGIN':'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');const result=await fn((sql,args)=>c.query(sql,args));await c.query('COMMIT');return result;}catch(e){await c.query('ROLLBACK').catch(()=>{});throw e;}finally{c.release();}}});}

@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
+import {readFileSync} from 'node:fs';
+import {empty} from '../backend/reports/src/domain.mjs';
+import {workflow} from '../backend/reports/src/workflow.mjs';
+import {intakeForm} from '../static/reports/upload-workflow.mjs';
+const type='hospital-case-v1';
+function document(id,reference='CASE-001',name='Synthetic case') {return {id,kind:'document',version:1,body:{title:id,templateId:type,caseName:name,caseReference:reference,sha256:id,blocks:[{text:'Synthetic source only.'}],fields:[]}};}
+function prepare(documents,extra={},photos=[]) {const state=empty();state.entities.push(...documents,...photos);return workflow(state,'prepare-report',{templateId:type,title:'Synthetic report',period:'Example period',documentIds:documents.map(d=>d.id),reportUseConfirmed:true,...extra},documents,randomUUID());}
+test('case documents require a confirmed label and reference',()=>{for(const d of [document('a',''),document('a','CASE-001','')])assert.throws(()=>prepare([d]),/Review each selected case document/);assert.throws(()=>prepare([]),/at least one case document/);});
+test('same case label does not merge differing references',()=>{assert.throws(()=>prepare([document('a','CASE-A'),document('b','CASE-B')]),/different case labels or case references/);});
+test('same reference does not merge differing case labels',()=>{assert.throws(()=>prepare([document('a'),document('b','CASE-001','Another synthetic case')]),/different case labels or case references/);});
+test('consistent confirmed identity is retained on the report',()=>{const r=prepare([document('a'),document('b')],{caseName:'Synthetic case',caseReference:'CASE-001'});assert.equal(r.body.caseName,'Synthetic case');assert.equal(r.body.caseReference,'CASE-001');});
+test('entered identity and extracted labels must match confirmed documents',()=>{assert.throws(()=>prepare([document('a')],{caseReference:'CASE-OTHER'}),/entered case label or case reference/);const d=document('a');d.body.fields=[{id:'name',value:'Different synthetic case'}];assert.throws(()=>prepare([d]),/Extracted case labels/);});
+test('photo identity must match the confirmed document reference',()=>{const photo={id:'photo',kind:'photo',version:1,body:{documentId:'a',associationConfirmed:true,consentConfirmed:true,caseName:'Synthetic case',caseReference:'CASE-OTHER'}};assert.throws(()=>prepare([document('a')],{photoIds:['photo']},[photo]),/Photo case labels and case references/);photo.body.caseReference='CASE-001';assert.equal(prepare([document('a')],{photoIds:['photo']},[photo]).body.caseReference,'CASE-001');});
+test('attaching documents cannot replace a report with another case',()=>{const first=document('a'),state=empty();state.entities.push(first);const r=workflow(state,'prepare-report',{templateId:type,title:'Synthetic report',period:'Example',documentIds:['a'],reportUseConfirmed:true},[first],randomUUID());const next=document('b','CASE-OTHER');state.entities.push(next);assert.throws(()=>workflow(state,'attach-documents',{id:r.id,expectedVersion:r.version,documentIds:['b'],reportUseConfirmed:true},[next],randomUUID()),/different case from this report/);});
+test('case intake collects identity and forwards it to uploads and preparation',()=>{const html=intakeForm({type,documents:[]});assert.match(html,/name="caseName" required/);assert.match(html,/name="caseReference" required/);assert.match(html,/Source materials first/);const other=intakeForm({type:'hospital-periodic-v1',documents:[]});assert.doesNotMatch(other,/name="caseReference"/);const source=readFileSync(new URL('../static/reports/upload-workflow.mjs',import.meta.url),'utf8');assert.match(source,/uploadFile\(file,\{templateId:context.type,\.\.\.caseIdentity/);assert.match(source,/const input=\{\.\.\.caseIdentity,documentIds:/);});
+
+test('deduplicating identical file bytes cannot hide conflicting case metadata',()=>{const a=document('a','CASE-A'),b=document('b','CASE-B');b.body.sha256=a.body.sha256;assert.throws(()=>prepare([a,b]),/different case labels or case references/);});

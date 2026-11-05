@@ -1,0 +1,25 @@
+{
+  "enabled": false,
+  "sharedAccessApproved": false,
+  "approvalReference": "",
+  "workspaceId": "hospital-shared-reports-v1",
+  "allowedOrigin": "https://example.invalid",
+  "passwordVariable": "HOSPITAL_REPORT_PASSWORD_HASH",
+  "username": "",
+  "sessionHours": 4,
+  "rememberDays": 1,
+  "ai": {
+    "enabled": false,
+    "dataSharingApproved": false,
+    "spendingApproved": false,
+    "approvalReference": "",
+    "projectId": "",
+    "secretReference": "HOSPITAL_REPORT_AI_KEY",
+    "model": "",
+    "budgetMicroUsd": 0,
+    "reservationMicroUsd": 200000,
+    "maxOutputTokens": 6000,
+    "inputNanoUsdPerToken": 0,
+    "outputNanoUsdPerToken": 0
+  }
+}

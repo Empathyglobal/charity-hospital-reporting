@@ -1,0 +1,19 @@
+{
+  "repository": "https://github.com/tesseract-ocr/tessdata_fast",
+  "license": "Apache-2.0; LICENSE retained",
+  "networkUse": "Models downloaded once during development. Patient files remain local during OCR.",
+  "files": [
+    {
+      "language": "eng",
+      "path": "eng.traineddata",
+      "source": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/eng.traineddata",
+      "sha256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2"
+    },
+    {
+      "language": "khm",
+      "path": "khm.traineddata",
+      "source": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/khm.traineddata",
+      "sha256": "47f110575341b322052f3becbefee61a3ecf1ef549352b5d4d33d28afe30d099"
+    }
+  ]
+}
